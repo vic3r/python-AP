@@ -1,18 +1,31 @@
+from __future__ import annotations
 from datetime import date
 from dataclasses import dataclass
-from typing import Optional, NewType
+from typing import Optional, NewType, List
 
 OrderReference = NewType('OrderReference', str)
 ProductReference = NewType('ProductReference', str)
 Quantity = NewType("Quantity", int)
 Reference = NewType("Reference", str)
 
-@dataclass(frozen=True)
+class OutOfStock(Exception):
+    pass
+
+def allocate(line: OrderLine, batches: List[Batch]) -> str:
+    try:
+        batch = next(
+            b for b in sorted(batches) if b.can_allocate(line)
+        )
+        batch.allocate(line)
+        return batch.reference
+    except StopIteration:
+        raise OutOfStock(f'Out of stock for sku {line.sku}')
+
+@dataclass(unsafe_hash=True)
 class OrderLine:
-    orderId: OrderReference
+    orderid: OrderReference
     sku: ProductReference
     qty: int
-
 
 class Batch:
     def __init__(self, ref: Reference, sku: ProductReference, qty: Quantity, eta: Optional[date]):
@@ -24,7 +37,7 @@ class Batch:
     
     def allocate(self, line: OrderLine):
         if self.can_allocate(line):
-            self._purchased_quantity -= line.qty
+            self._allocations.add(line)
     
     def deallocate(self, line: OrderLine):
         if line in self._allocations:
@@ -39,7 +52,7 @@ class Batch:
         return self._purchased_quantity - self.allocated_quantity
 
     def can_allocate(self, line: OrderLine) -> bool:
-        return self.sku == line.sku and self._purchased_quantity >= line.qty
+        return self.sku == line.sku and self.available_quantity >= line.qty
     
     def __eq__(self, other):
         if not isinstance(other, Batch):
@@ -55,4 +68,7 @@ class Batch:
         if other.eta is None:
             return True
         return self.eta > other.eta
+    
+    def __repr__(self):
+        return f'<Batch {self.reference}>'
     
