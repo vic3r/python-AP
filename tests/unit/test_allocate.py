@@ -1,7 +1,7 @@
 from datetime import date, timedelta
 import pytest
 from domain import model
-from model import allocate, OrderLine, Batch, OutOfStock
+from domain.model import allocate, OrderLine, Batch, OutOfStock
 
 today = date.today()
 tomorrow = today + timedelta(days=1)
@@ -16,7 +16,6 @@ def test_prefers_current_stock_batches_to_shipments():
 
     assert in_stock_batch.available_quantity == 90
     assert shipment_batch.available_quantity == 100
-
 
 def test_prefers_earlier_batches():
     earliest = Batch("speedy-batch", "MINIMALIST-SPOON", 100, eta=today)
