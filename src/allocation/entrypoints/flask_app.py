@@ -1,29 +1,12 @@
 from datetime import datetime
 from flask import Flask, jsonify, request
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
 
-import config
-from domain import model
-from adapters import repository, orm
+from allocation.domain import model
+from allocation.adapters import orm
 from allocation.service_layer import services, unit_of_work
 
-orm.start_mappers()
 app = Flask(__name__)
-
-@app.route('/allocate', methods=['POST'])
-def allocate_endpoint():
-    try:
-        batchref = services.allocate(
-            request.json['orderid'],
-            request.json['sku'],
-            request.json['qty'],
-            unit_of_work.SqlAlchemyUnitOfWork(),
-        )
-    except (model.OutOfStock, services.InvalidSku) as e:
-        return jsonify({'message': str(e)}), 400
-
-    return jsonify({'batchref': batchref}), 201
+orm.start_mappers()
 
 @app.route('/add_batch', methods=['POST'])
 def add_batch():
@@ -36,3 +19,17 @@ def add_batch():
     )
 
     return 'Ok', 201
+
+@app.route('/allocate', methods=['POST'])
+def allocate_endpoint():
+    try:
+        batchref = services.allocate(
+            request.json['orderid'],
+            request.json['sku'],
+            request.json['qty'],
+            unit_of_work.SqlAlchemyUnitOfWork(),
+        )
+    except services.InvalidSku as e:
+        return jsonify({'message': str(e)}), 400
+
+    return jsonify({'batchref': batchref}), 201
