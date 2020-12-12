@@ -1,5 +1,5 @@
 from datetime import date
-from domain.model import Batch, OrderLine
+from allocation.domain.model import Batch, OrderLine
 
 def test_allocating_to_a_batch_reduces_the_availability_quantity():
     batch = Batch("batch-001", "SMALL-TABLE", qty=20, eta=date.today())
@@ -31,11 +31,6 @@ def test_can_allocate_if_skus_dont_match():
     batch = Batch("batch-001", "UNCOMFORTABLE-CHAIR", 100, eta=None)
     line = OrderLine("order-123", "EXPENSIVE-TOASTER", 10)
     assert batch.can_allocate(line) is False
-
-def test_can_deallocate_allocated_lines():
-    batch, unallocated_line = make_batch_and_line('DECORATIVE-TRINKET', 20, 2)
-    batch.deallocate(unallocated_line)
-    assert batch.available_quantity == 20
 
 def test_allocation_is_idempotent():
     batch, line = make_batch_and_line('ANGULAR-DESK', 20, 2)
