@@ -13,6 +13,7 @@ def post_to_add_batch(ref, sku, qty, eta):
     )
     assert r.status_code == 201
 
+
 @pytest.mark.usefixtures('postgres_db')
 @pytest.mark.usefixtures('restart_api')
 def test_unhappy_path_returns_400_and_error_message():
