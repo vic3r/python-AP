@@ -2,6 +2,8 @@ from __future__ import annotations
 from datetime import date
 from dataclasses import dataclass
 from typing import Optional, NewType, List
+from allocation.domain import events
+
 
 OrderReference = NewType('OrderReference', str)
 ProductReference = NewType('ProductReference', str)
@@ -16,6 +18,7 @@ class Product:
         self.sku = sku
         self.batches = batches
         self.version_number = version_number
+        self.events = []
 
     def allocate(self, line: OrderLine, batches: List[Batch]) -> str:
         try:
@@ -26,7 +29,8 @@ class Product:
             self.version_number += 1
             return batch.reference
         except StopIteration:
-            raise OutOfStock(f'Out of stock for sku {line.sku}')
+            self.events.append(events.OutOfStock(line.sku))
+            return ""
 
 @dataclass(unsafe_hash=True)
 class OrderLine:
