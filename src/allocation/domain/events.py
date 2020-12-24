@@ -13,7 +13,7 @@ class BatchCreated(Event):
   ref: str
   sku: str
   qty: int
-  eta: Optional[date]
+  eta: Optional[date] = None
 
 @dataclass
 class AllocationRequired(Event):

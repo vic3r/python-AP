@@ -10,9 +10,6 @@ ProductReference = NewType('ProductReference', str)
 Quantity = NewType("Quantity", int)
 Reference = NewType("Reference", str)
 
-class OutOfStock(Exception):
-    pass
-
 class Product:
     def __init__(self, sku: str, batches: List[Batch], version_number: int = 0):
         self.sku = sku
