@@ -36,6 +36,14 @@ def allocate(
         uow.commit()
     return batchref
 
+def change_batch_quantity(
+    event: events.BatchQuantityChanged,
+    uow: unit_of_work.AbstractUnitOfWork
+):
+    with uow:
+        product = uow.product.get_by_batchref(batchref=event.ref)
+        product.change_batch_quantity(ref=event.ref, quantity=event.qty)
+        uow.commit()
 
 def send_out_of_stock_notification(event: events.OutOfStock, uow: unit_of_work.AbstractUnitOfWork):
     email.send_email(
