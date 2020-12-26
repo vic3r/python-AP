@@ -1,7 +1,7 @@
 from __future__ import annotations
 from datetime import date
 from dataclasses import dataclass
-from typing import Optional, NewType, List
+from typing import Optional, NewType, List, Set
 from allocation.domain import events
 
 
@@ -35,7 +35,7 @@ class Product:
         while batch.available_quantity < 0:
             line = batch.deallocate_one()
             self.events.append(
-                events.AllocationRequired(line.orderid, line.sku, line.qty)
+                commands.Allocate(line.orderid, line.sku, line.qty)
             )
 
 @dataclass(unsafe_hash=True)
