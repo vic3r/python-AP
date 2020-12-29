@@ -1,9 +1,9 @@
+# pylint: disable=no-self-use
 from datetime import date
 from unittest import mock
 import pytest
-
 from allocation.adapters import repository
-from allocation.domain import commands
+from allocation.domain import commands, events
 from allocation.service_layer import handlers, messagebus, unit_of_work
 
 
@@ -59,17 +59,26 @@ class TestAddBatch:
         assert "b2" in [b.reference for b in uow.products.get("GARISH-RUG").batches]
 
 
+
+@pytest.fixture(autouse=True)
+def fake_redis_publish():
+    with mock.patch("allocation.adapters.redis_eventpublisher.publish"):
+        yield
+
+
+
 class TestAllocate:
 
-    def test_returns_allocation(self):
+    def test_allocates(self):
         uow = FakeUnitOfWork()
         messagebus.handle(
             commands.CreateBatch("batch1", "COMPLICATED-LAMP", 100, None), uow
         )
-        results = messagebus.handle(
+        messagebus.handle(
             commands.Allocate("o1", "COMPLICATED-LAMP", 10), uow
         )
-        assert results.pop(0) == "batch1"
+        [batch] = uow.products.get("COMPLICATED-LAMP").batches
+        assert batch.available_quantity == 90
 
 
     def test_errors_for_invalid_sku(self):
@@ -125,14 +134,14 @@ class TestChangeBatchQuantity:
 
     def test_reallocates_if_necessary(self):
         uow = FakeUnitOfWork()
-        event_history = [
+        history = [
             commands.CreateBatch("batch1", "INDIFFERENT-TABLE", 50, None),
             commands.CreateBatch("batch2", "INDIFFERENT-TABLE", 50, date.today()),
             commands.Allocate("order1", "INDIFFERENT-TABLE", 20),
             commands.Allocate("order2", "INDIFFERENT-TABLE", 20),
         ]
-        for e in event_history:
-            messagebus.handle(e, uow)
+        for msg in history:
+            messagebus.handle(msg, uow)
         [batch1, batch2] = uow.products.get(sku="INDIFFERENT-TABLE").batches
         assert batch1.available_quantity == 10
         assert batch2.available_quantity == 50

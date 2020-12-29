@@ -51,3 +51,24 @@ def send_out_of_stock_notification(event: events.OutOfStock, uow: unit_of_work.A
         'stock@made.com',
         f'Out of stock for {event.sku}',
     )
+
+def publish_allocate_event(event: events.Allocate, uow: unit_of_work.AbstractUnitOfWork):
+    redis_eventpublisher.publish('line_allocated', event)
+
+def add_allocation_to_read_model(event: events.Allocate, uow: unit_of_work.AbstractUnitOfWork):
+    with uow:
+        uow.session.execute(
+            'INSERT INTO allocations_view (orderid, sku, batchref)'
+            'VALUES (:orderid, :sku, :batchref)',
+            dict(orderid=event.orderid, sku=event.sku, batchref=event.batchref)
+        )
+        uow.commit()
+
+def remove_allocation_from_model(event: events.Deallocate, uow: unit_of_work.AbstractUnitOfWork):
+    with uow:
+        uow.session.execute(
+            'DELETE FROM allocation_view'
+            ' WHERE orderid = :orderid AND sku = :sku',
+            dict(orderid=event.orderid, sku=event.sku)
+        )
+        uow.commit()
