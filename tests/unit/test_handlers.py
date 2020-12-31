@@ -7,6 +7,14 @@ from allocation.domain import commands, events
 from allocation.service_layer import handlers, messagebus, unit_of_work
 
 
+def bootstrap_test_app():
+    return bootstrap.bootstrap(
+        start_orm=False,
+        uow= FakeUnitOfWork(),
+        send_mail=lambda *args: None,
+        publish=lambda *args: None,
+    )
+
 class FakeRepository(repository.AbstractRepository):
 
     def __init__(self, products):
@@ -40,6 +48,13 @@ class FakeUnitOfWork(unit_of_work.AbstractUnitOfWork):
         pass
 
 
+class FakeNotifications(notifications.AbstractNotifications):
+
+    def __init__(self):
+        self.sent = defaultdict(list)
+    
+    def send(self, destination, message):
+        self.sent[destination].append(message)
 
 class TestAddBatch:
 
@@ -152,3 +167,17 @@ class TestChangeBatchQuantity:
         assert batch1.available_quantity == 5
         # and 20 will be reallocated to the next batch
         assert batch2.available_quantity == 30
+    
+    def test_sends_email_on_out_of_stock_error(self):
+        fake_notifs = FakeNotifications()
+        bus = bootstrap.bootstrap(
+            start_orm=False,
+            uow=FakeUnitOfWork(),
+            notifications=fake_notifs,
+            publish=lambda *args: None,
+        )
+        bus.handle(commands.CreateBatch("b1", "POPULAR-CURTAINS", 9, None))
+        bus.handle(commands.Allocate("o1", "POPULAR-CURTAINS", 10))
+        assert fake_notifs.sent['stock@made.com'] == [
+            f"Out of stock for POPULAR-CURTAINS",
+        ]
