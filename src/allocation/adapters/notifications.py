@@ -1,11 +1,17 @@
 import abc
 import smtplib
+from allocation import config
 
 class AbstractNotifications(abc.ABC):
 
   @abc.abstractmethod
   def send(self, destination, message):
     raise NotImplementedError
+
+CFG = config.get_email_host_and_port()
+
+DEFAULT_HOST = CFG['host']
+DEFAULT_PORT = CFG['port']
 
 class EmailNotifications(AbstractNotifications):
 
