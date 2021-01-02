@@ -58,3 +58,9 @@ services:
     image: redis:alpine
     ports:
       - "63791:6379"
+  
+  mailhog:
+    image: mailhog/mailhog
+    ports:
+      - "11025:11025"
+      - "18025:8025"
