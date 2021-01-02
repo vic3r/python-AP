@@ -1,11 +1,13 @@
+import logging
 from sqlalchemy import (
-    Table, MetaData, Column, Integer, String, Date,
-    ForeignKey,
-    event
+    Table, MetaData, Column, Integer, String, Date, ForeignKey,
+    event,
 )
 from sqlalchemy.orm import mapper, relationship
 
 from allocation.domain import model
+
+logger = logging.getLogger(__name__)
 
 metadata = MetaData()
 
@@ -19,7 +21,7 @@ order_lines = Table(
 
 products = Table(
     'products', metadata,
-    Column('sku', Integer, primary_key=True),
+    Column('sku', String(255), primary_key=True),
     Column('version_number', Integer, nullable=False, server_default='0'),
 )
 
@@ -27,7 +29,7 @@ batches = Table(
     'batches', metadata,
     Column('id', Integer, primary_key=True, autoincrement=True),
     Column('reference', String(255)),
-    Column('sku', String(255)),
+    Column('sku', ForeignKey('products.sku')),
     Column('_purchased_quantity', Integer, nullable=False),
     Column('eta', Date, nullable=True),
 )
